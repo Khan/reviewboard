@@ -2,10 +2,12 @@ from datetime import datetime
 import hashlib
 
 from django.db import models
+from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.fields import Base64Field
 
 from reviewboard.diffviewer.managers import FileDiffDataManager
+from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.scmtools.models import Repository
 
 
@@ -64,6 +66,10 @@ class FileDiff(models.Model):
     def moved(self):
         return self.status == self.MOVED
 
+    @property
+    def is_new(self):
+        return self.source_revision == PRE_CREATION
+
     def _get_diff(self):
         # If the diff is not in FileDiffData, it is in FileDiff.
         if not self.diff_hash:
@@ -115,7 +121,7 @@ class DiffSet(models.Model):
     """
     name = models.CharField(_('name'), max_length=256)
     revision = models.IntegerField(_("revision"))
-    timestamp = models.DateTimeField(_("timestamp"), default=datetime.now)
+    timestamp = models.DateTimeField(_("timestamp"), default=timezone.now)
     basedir = models.CharField(_('base directory'), max_length=256,
                                blank=True, default='')
     history = models.ForeignKey('DiffSetHistory', null=True,
@@ -162,7 +168,7 @@ class DiffSetHistory(models.Model):
     diffsets belonging to an object.
     """
     name = models.CharField(_('name'), max_length=256)
-    timestamp = models.DateTimeField(_("timestamp"), default=datetime.now)
+    timestamp = models.DateTimeField(_("timestamp"), default=timezone.now)
 
     def __unicode__(self):
         return u'Diff Set History (%s revisions)' % self.diffsets.count()

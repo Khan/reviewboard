@@ -1573,7 +1573,8 @@ $.fn.reviewRequestFieldEditor = function() {
                 multiline: this.tagName == "PRE",
                 showButtons: !$(this).hasClass("screenshot-editable"),
                 startOpen: this.id == "changedescription",
-                useEditIconOnly: $(this).hasClass("comma-editable")
+                useEditIconOnly: $(this).hasClass("comma-editable"),
+		showRequiredFlag: $(this).hasClass("required")
             })
             .bind("beginEdit", function() {
                 gEditCount++;
@@ -2487,13 +2488,13 @@ $(document).ready(function() {
         $(this).closest(".box").toggleClass('collapsed');
     });
 
-    /* Expand all reviews and issue summary table */
+    /* Expand all reviews */
     $("#expand-all").click(function() {
         $(".collapsed").removeClass("collapsed");
         return false;
     });
 
-    /* Collapse all reviews and issue summary table */
+    /* Collapse all reviews */
     $("#collapse-all").click(function() {
 	$(".box").addClass("collapsed");
 	return false;
