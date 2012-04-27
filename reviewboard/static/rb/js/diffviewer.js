@@ -1058,7 +1058,7 @@ function addCommentFlags(table, lines, key) {
  * @param {int}    chunk_index         The chunk index number.
  * @param {string} tbody_id            The tbody ID to insert into.
  */
-function expandChunk(review_base_url, fileid, filediff_id, revision,
+RB.expandChunk = function(review_base_url, fileid, filediff_id, revision,
                      interdiff_revision, chunk_index, link) {
     gDiff.getDiffFragment(review_base_url, fileid, filediff_id, revision,
                           interdiff_revision, chunk_index, function(html) {
@@ -1173,9 +1173,9 @@ function updateAnchors(table) {
  * @param {string} file_index                The file index
  * @param {dict}   comment_counts            The comments for this region
  */
-function loadFileDiff(review_base_url, filediff_id, filediff_revision,
-                      interfilediff_id, interfilediff_revision, file_index,
-                      comment_counts) {
+RB.loadFileDiff = function(review_base_url, filediff_id, filediff_revision,
+                           interfilediff_id, interfilediff_revision,
+                           file_index, comment_counts) {
     if ($("#file" + filediff_id).length == 1) {
         /* We already have this one. This is probably a pre-loaded file. */
         setupFileDiff();

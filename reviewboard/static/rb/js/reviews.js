@@ -1,6 +1,9 @@
+this.gCommentDlg = null;
+this.gReviewRequest = new RB.ReviewRequest(gReviewRequestId,
+                                           gReviewRequestSitePrefix,
+                                           gReviewRequestPath);
 
 // State variables
-var gCommentDlg = null;
 var gEditCount = 0;
 var gPublishing = false;
 var gPendingSaveCount = 0;
@@ -9,9 +12,6 @@ var gReviewBanner = $("#review-banner");
 var gDraftBanner = $("#draft-banner");
 var gDraftBannerButtons = $("input", gDraftBanner);
 var gFileAttachmentComments = {};
-var gReviewRequest = new RB.ReviewRequest(gReviewRequestId,
-                                          gReviewRequestSitePrefix,
-                                          gReviewRequestPath);
 
 
 /*
@@ -132,7 +132,7 @@ var gCommentIssueManager = new function() {
                      * issue status.
                      */
                     if (rsp.last_activity_time) {
-                        registerForUpdates(rsp.last_activity_time);
+                        RB.registerForUpdates(rsp.last_activity_time);
                     }
                 }
             });
@@ -1268,8 +1268,11 @@ $.fn.commentDlg = function() {
 
         comment.ready(function() {
             textField.val(comment.text);
-            issueField[0].checked = comment.issue_opened;
-
+            if (comment.loaded){
+                issueField[0].checked = comment.issue_opened;
+            } else {
+                issueField[0].checked = gOpenAnIssue;
+            }
             self.setDirty(false);
 
             /* Set the initial button states */
@@ -1343,7 +1346,7 @@ $.fn.commentDlg = function() {
  * @return {jQuery} The new review form element.
  */
 $.reviewForm = function(review) {
-    rbApiCall({
+    RB.apiCall({
         type: "GET",
         dataType: "html",
         data: {},
@@ -1904,7 +1907,7 @@ $.newFileAttachment = function(fileAttachment) {
 /*
  * Sets the list of file attachment comments.
  */
-function setFileAttachmentComments(comments) {
+RB.setFileAttachmentComments = function(comments) {
     gFileAttachmentComments = comments;
 }
 
@@ -1918,7 +1921,7 @@ function setFileAttachmentComments(comments) {
  * @param {string} type           The type of update to watch for, or
  *                                undefined for all types.
  */
-function registerForUpdates(lastTimestamp, type) {
+RB.registerForUpdates = function(lastTimestamp, type) {
     function updateFavIcon(url) {
         var head = $("head");
         head.find("link[rel=icon]").remove();
@@ -2020,7 +2023,7 @@ function hideReviewBanner() {
  * @param {string} key         The key for this request, using the
  *                             filediff and interfilediff.
  */
-function queueLoadDiffFragment(queue_name, comment_id, key) {
+RB.queueLoadDiffFragment = function(queue_name, comment_id, key) {
     if (!gPendingDiffFragments[queue_name]) {
         gPendingDiffFragments[queue_name] = {};
     }

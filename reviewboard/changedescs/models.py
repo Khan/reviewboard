@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
@@ -88,12 +86,6 @@ class ChangeDescription(models.Model):
                 'old': (old_value,),
                 'new': (new_value,),
             }
-
-    def truncate_text(self):
-        if len(self.text) > 60:
-            return self.text[0:57] + "..."
-        else:
-            return self.text
 
     def __unicode__(self):
         return self.text

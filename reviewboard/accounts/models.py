@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from django.contrib.auth.models import User
 from django.db import models
 from django.utils import timezone
@@ -63,6 +61,10 @@ class Profile(models.Model):
         verbose_name=_("profile private"),
         help_text=_("Indicates whether the user wishes to keep his/her profile "
                     "private."))
+    open_an_issue = models.BooleanField(default=True,
+        verbose_name=_("opens an issue"),
+        help_text=_("Indicates whether the user wishes to default "
+                    "to opening an issue or not."))
 
     # Indicate whether submitted review requests should appear in the
     # review request lists (excluding the dashboard).
