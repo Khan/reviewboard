@@ -1,6 +1,5 @@
 import pytz
 
-from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.staticfiles.templatetags.staticfiles import static
 from django.http import Http404
@@ -274,27 +273,32 @@ class SummaryColumn(Column):
 
     def render_data(self, review_request):
         summary = conditional_escape(review_request.summary)
+        labels = {}
+
         if not summary:
             summary = '&nbsp;<i>%s</i>' % _('No Summary')
 
         if review_request.submitter_id == self.datagrid.request.user.id:
+
             if review_request.draft_summary is not None:
                 summary = conditional_escape(review_request.draft_summary)
-                return self.__labeled_summary(_('Draft'), summary, 'label-draft')
-
-            if (not review_request.public and
-                review_request.status == ReviewRequest.PENDING_REVIEW):
-                return self.__labeled_summary(_('Draft'), summary, 'label-draft')
+                labels.update({_('Draft'):  'label-draft'})
+            elif (not review_request.public and
+                  review_request.status == ReviewRequest.PENDING_REVIEW):
+                labels.update({_('Draft'): 'label-draft'})
 
         if review_request.status == ReviewRequest.SUBMITTED:
-            return self.__labeled_summary(_('Submitted'), summary, 'label-submitted')
+            labels.update({_('Submitted'): 'label-submitted'})
         elif review_request.status == ReviewRequest.DISCARDED:
-            return self.__labeled_summary(_('Discarded'), summary, 'label-discarded')
+            labels.update({_('Discarded'): 'label-discarded'})
 
-        return summary
+        display_data = ''
 
-    def __labeled_summary(self, label, summary, label_class):
-        return u'<span class="%s">[%s]</span> %s' % (label_class, label, summary)
+        for label in labels:
+           display_data += u'<span class="%s">[%s] </span>' % (
+               labels[label], label)
+        display_data += u'%s' % summary
+        return display_data
 
 
 class SubmitterColumn(Column):
@@ -341,7 +345,7 @@ class PeopleColumn(Column):
 
     def render_data(self, review_request):
         people = review_request.target_people.all()
-        return reduce(lambda a,d: a+d.username+' ', people, '')
+        return reduce(lambda a, d: a + d.username + ' ', people, '')
 
 
 class GroupsColumn(Column):
@@ -354,7 +358,7 @@ class GroupsColumn(Column):
 
     def render_data(self, review_request):
         groups = review_request.target_groups.all()
-        return reduce(lambda a,d: a+d.name+' ', groups, '')
+        return reduce(lambda a, d: a + d.name + ' ', groups, '')
 
 
 class GroupMemberCountColumn(Column):
@@ -407,6 +411,47 @@ class ReviewCountColumn(Column):
         return "%s#last-review" % review_request.get_absolute_url()
 
 
+class DiffUpdatedColumn(DateTimeColumn):
+    """
+    A column indicating the date and time the diff was last updated.
+    """
+    def __init__(self, *args, **kwargs):
+        DateTimeColumn.__init__(self, _("Diff Updated"),
+        db_field="diffset_history__last_diff_updated",
+        field_name='last_diff_updated', sortable=True, link=False,
+        *args, **kwargs)
+
+    def augment_queryset(self, queryset):
+        return queryset.select_related('diffset_history')
+
+    def render_data(self, obj):
+        if obj.diffset_history.last_diff_updated:
+            return DateTimeColumn.render_data(self, obj.diffset_history)
+        else:
+            return ""
+
+
+class DiffUpdatedSinceColumn(DateTimeSinceColumn):
+    """
+    A column indicating the elapsed time since the diff was last
+    updated.
+    """
+    def __init__(self, *args, **kwargs):
+        DateTimeSinceColumn.__init__(self, _("Diff Updated"),
+        db_field="diffset_history__last_diff_updated",
+        field_name='last_diff_updated', sortable=True, link=False,
+        *args, **kwargs)
+
+    def augment_queryset(self, queryset):
+        return queryset.select_related('diffset_history')
+
+    def render_data(self, obj):
+        if obj.diffset_history.last_diff_updated:
+            return DateTimeSinceColumn.render_data(self, obj.diffset_history)
+        else:
+            return ""
+
+
 class ReviewRequestDataGrid(DataGrid):
     """
     A datagrid that displays a list of review requests.
@@ -433,11 +478,8 @@ class ReviewRequestDataGrid(DataGrid):
         db_field="last_updated",
         field_name="last_updated",
         css_class=lambda r: ageid(r.last_updated))
-    diff_updated = DateTimeColumn(_("Diff Updated"),
-        format="F jS, Y, P", shrink=True,
-        field_name="last_updated",
-        css_class=lambda r: ageid(r.last_updated))
-
+    diff_updated = DiffUpdatedColumn(format="F jS, Y, P", shrink=True,
+        css_class=lambda r: ageid(r.diffset_history.last_diff_updated))
     time_added_since = DateTimeSinceColumn(_("Posted"),
         detailed_label=_("Posted Time (Relative)"),
         field_name="time_added", shrink=True,
@@ -447,10 +489,9 @@ class ReviewRequestDataGrid(DataGrid):
         db_field="last_updated",
         field_name="last_updated",
         css_class=lambda r: ageid(r.last_updated))
-    diff_updated_since = DateTimeSinceColumn(_("Diff Updated"),
-        detailed_label=_("Diff Updated (Relative)"),
-        field_name="last_updated", shrink=True,
-        css_class=lambda r: ageid(r.last_updated))
+    diff_updated_since = DiffUpdatedSinceColumn(
+        detailed_label=_("Diff Updated (Relative)"), shrink=True,
+        css_class=lambda r: ageid(r.diffset_history.last_diff_updated))
 
     review_count = ReviewCountColumn()
 
@@ -594,7 +635,7 @@ class DashboardDataGrid(ReviewRequestDataGrid):
                 # group exists and show a 404 if it doesn't. Otherwise, we'll
                 # show an empty datagrid with the name.
                 if not Group.objects.filter(name=group,
-                                            local_site=self.local_site).exists():
+                    local_site=self.local_site).exists():
                     raise Http404
                 self.queryset = ReviewRequest.objects.to_group(
                     group, self.local_site, user)
